@@ -71,6 +71,13 @@ exports.loginUser = async (req, res) => {
         exclude: ["createdAt", "updatedAt", "password"],
       },
     })
+    console.log("data ", data)
+    console.log(
+      "password ditulis ",
+      password,
+      "password database ",
+      data.password
+    )
     //Check password is valid
     const isValid = await bcrypt.compare(password, data.password)
     if (!isValid) {
