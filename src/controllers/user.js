@@ -43,7 +43,7 @@ exports.updateProfile = async (req, res) => {
     const id = req.id.id
     console.log("request update executed", req.file)
     if (req.file) {
-      const result = await cloudinary.uploader.upload(req.file.path, {
+      const result = await cloudinary.uploader.upload(req.file.filename, {
         folder: "dumbsound-file",
         use_filename: true,
         unique_filename: false,

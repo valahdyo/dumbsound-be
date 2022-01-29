@@ -1,6 +1,5 @@
 const { artist, music } = require("../../models")
 const Joi = require("joi")
-const IMAGE_PATH = `http://localhost:5000/uploads/`
 
 exports.addArtist = async (req, res) => {
   //Validating

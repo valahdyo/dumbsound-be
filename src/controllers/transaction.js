@@ -5,7 +5,7 @@ const IMAGE_PATH = process.env.PATH_FILE || `http://localhost:5000/uploads/`
 // Add Transaction
 exports.addTransaction = async (req, res) => {
   try {
-    const result = await cloudinary.uploader.upload(req.file.path, {
+    const result = await cloudinary.uploader.upload(req.file.filename, {
       folder: "dumbsound-file",
       use_filename: true,
       unique_filename: false,
