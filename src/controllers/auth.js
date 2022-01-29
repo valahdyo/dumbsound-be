@@ -68,7 +68,7 @@ exports.loginUser = async (req, res) => {
     let data = await user.findOne({
       where: { email },
       attributes: {
-        exclude: ["createdAt", "updatedAt", "password"],
+        exclude: ["createdAt", "updatedAt"],
       },
     })
     console.log("data ", data)
