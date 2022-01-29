@@ -20,7 +20,7 @@ exports.addMusic = async (req, res) => {
       })
     if (req.id.listAs) {
       const result_thumbnail = await cloudinary.uploader.upload(
-        req.files.thumbnail[0].filename,
+        req.files.thumbnail[0].path,
         {
           folder: "dumbsound-file",
           use_filename: true,
@@ -28,7 +28,7 @@ exports.addMusic = async (req, res) => {
         }
       )
       const result_attache = await cloudinary.uploader.upload(
-        req.files.attache[0].filename,
+        req.files.attache[0].path,
         {
           folder: "dumbsound-file",
           resource_type: "raw",
