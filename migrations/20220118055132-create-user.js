@@ -33,7 +33,7 @@ module.exports = {
         type: Sequelize.STRING,
       },
       subscribe: {
-        type: Sequelize.BOOLEAN,
+        type: Sequelize.INTEGER,
       },
       createdAt: {
         allowNull: false,
