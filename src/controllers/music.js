@@ -2,6 +2,7 @@ const { artist, music } = require("../../models")
 const Joi = require("joi")
 const cloudinary = require("../utils/cloudinary")
 const FILE_PATH = process.env.PATH_FILE || "http://localhost:5000/uploads/"
+const AUDIO_PATH = process.env.AUDIO_PATH
 
 exports.addMusic = async (req, res) => {
   try {
@@ -72,7 +73,7 @@ exports.getMusic = async (req, res) => {
     data = JSON.parse(JSON.stringify(data))
     data = data.map((item) => {
       item.thumbnail = FILE_PATH + item.thumbnail
-      item.attache = FILE_PATH + item.attache
+      item.attache = AUDIO_PATH + item.attache
       return { ...item }
     })
     res.status(200).send({
