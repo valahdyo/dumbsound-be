@@ -6,6 +6,7 @@ const AUDIO_PATH = process.env.AUDIO_PATH
 
 exports.addMusic = async (req, res) => {
   try {
+    // Validating
     const schema = Joi.object({
       title: Joi.string().required(),
       year: Joi.string().required(),
