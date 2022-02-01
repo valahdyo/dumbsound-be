@@ -1,5 +1,9 @@
 const { user, transaction } = require("../../models")
+const midtransClient = require("midtrans-client")
+const MIDTRANS_CLIENT_KEY = process.env.MIDTRANS_CLIENT_KEY
+const MIDTRANS_SERVER_KEY = process.env.MIDTRANS_SERVER_KEY
 const cloudinary = require("../utils/cloudinary")
+const req = require("express/lib/request")
 const IMAGE_PATH = process.env.PATH_FILE || `http://localhost:5000/uploads/`
 
 // Add Transaction
@@ -12,32 +16,149 @@ exports.addTransaction = async (req, res) => {
       unique_filename: false,
     })
     const newPayment = await transaction.create({
+      id: parseInt(Math.random().toString().slice(3, 8)),
       startDate: null,
       dueDate: null,
       attache: result.public_id,
       userId: req.id.id,
       status: "Pending",
     })
-    let data = await transaction.findOne({
-      where: { id: newPayment.id },
-      include: {
-        model: user,
-        as: "user",
-        attributes: ["id", "fullName", "email", "subscribe"],
-      },
-      attributes: {
-        exclude: ["createdAt", "updatedAt", "userId"],
-      },
-    })
 
-    data = JSON.parse(JSON.stringify(data))
     res.status(200).send({
       status: "success",
-      data: { ...data, attache: IMAGE_PATH + data.attache },
     })
   } catch (error) {
     console.log(error)
     res.status(500).send({ status: "failed", msg: "Add transaction error" })
+  }
+}
+
+exports.paymentGateway = async (req, res) => {
+  try {
+    let buyerData = await user.findOne({
+      where: { id: req.id.id },
+
+      attributes: ["id", "fullName", "email", "subscribe"],
+    })
+
+    let snap = new midtransClient.Snap({
+      // Set to true if you want Production Environment (accept real transaction).
+      isProduction: false,
+      serverKey: process.env.MIDTRANS_SERVER_KEY,
+    })
+
+    let parameter = {
+      transaction_details: {
+        order_id:
+          req.id.id + "id" + parseInt(Math.random().toString().slice(3, 8)),
+        gross_amount: 50000,
+      },
+      credit_card: {
+        secure: true,
+      },
+      customer_details: {
+        full_name: buyerData?.fullName,
+        email: buyerData?.email,
+        phone: buyerData?.phone,
+      },
+    }
+    const payment = await snap.createTransaction(parameter)
+    console.log(payment, "Payment executed")
+    res.status(200).send({
+      payment,
+    })
+  } catch (error) {
+    console.log(error)
+    res.status(500)
+  }
+}
+
+const core = new midtransClient.CoreApi()
+
+core.apiConfig.set({
+  isProduction: false,
+  serverKey: MIDTRANS_SERVER_KEY,
+  clientKey: MIDTRANS_CLIENT_KEY,
+})
+
+exports.notification = async (req, res) => {
+  try {
+    console.log("Notification executed ", req.body)
+    const statusResponse = await core.transaction.notification(req.body)
+    const orderId = statusResponse.order_id
+    const transactionStatus = statusResponse.transaction_status
+    const fraudStatus = statusResponse.fraud_status
+
+    console.log(statusResponse)
+
+    if (transactionStatus == "capture") {
+      if (fraudStatus == "challenge") {
+        // TODO set transaction status on your database to 'challenge'
+        // and response with 200 OK
+        updateTransaction("Pending", orderId)
+        res.status(200)
+      } else if (fraudStatus == "accept") {
+        // TODO set transaction status on your database to 'success'
+        // and response with 200 OK
+        updateTransaction("Approve", orderId)
+        res.status(200)
+      }
+    } else if (transactionStatus == "settlement") {
+      // TODO set transaction status on your database to 'success'
+      // and response with 200 OK
+      updateTransaction("Approve", orderId)
+      res.status(200)
+    } else if (
+      transactionStatus == "cancel" ||
+      transactionStatus == "deny" ||
+      transactionStatus == "expire"
+    ) {
+      // TODO set transaction status on your database to 'failure'
+      // and response with 200 OK
+      updateTransaction("Cancel", orderId)
+      res.status(200)
+    } else if (transactionStatus == "pending") {
+      // TODO set transaction status on your database to 'pending' / waiting payment
+      // and response with 200 OK
+      updateTransaction("Pending", orderId)
+      res.status(200)
+    }
+  } catch (error) {
+    console.log(error)
+    res.status(500)
+  }
+}
+
+const updateTransaction = async (status, transactionId) => {
+  let str = transactionId.split("id")
+  data = await transaction.findOne({
+    where: { id: parseInt(str[1]) },
+  })
+  console.log(data, status, transactionId)
+  if (!data) {
+    await transaction.create({
+      id: parseInt(str[1]),
+      startDate: null,
+      dueDate: null,
+      userId: parseInt(str[0]),
+      status,
+    })
+    if (status === "Approve") {
+      const today = new Date()
+      const dueDate = new Date(new Date().setDate(today.getDate() + 30))
+      await transaction.update(
+        { dueDate, startDate: today },
+        {
+          where: { id: parseInt(str[1]) },
+        }
+      )
+      await user.update(
+        { subscribe: 1 },
+        {
+          where: { id: parseInt(str[0]) },
+        }
+      )
+    }
   }
 }
 
