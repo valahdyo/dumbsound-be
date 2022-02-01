@@ -83,7 +83,6 @@ core.apiConfig.set({
 
 exports.notification = async (req, res) => {
   try {
-    console.log("Notification executed ", req.body)
     const statusResponse = await core.transaction.notification(req.body)
     const orderId = statusResponse.order_id
     const transactionStatus = statusResponse.transaction_status
